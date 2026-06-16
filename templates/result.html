@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generated Prompt - {{ company_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Agent Prompt Generated</h1>
+            <p class="subtitle">For: {{ company_name }}</p>
+        </header>
+
+        <main>
+            <div class="result-actions">
+                <a href="/" class="back-btn">← Generate Another</a>
+                <div class="file-info">
+                    Saved to: <code>{{ filename }}</code>
+                </div>
+            </div>
+
+            <div class="prompt-container">
+                <pre class="prompt-content">{{ prompt }}</pre>
+            </div>
+
+            <div class="next-steps">
+                <h2>Next Steps</h2>
+                <ol>
+                    <li>Review the generated prompt above</li>
+                    <li>Customize it for your specific AI platform (ChatGPT, Claude, etc.)</li>
+                    <li>Test the agent with sample customer questions</li>
+                    <li>Iterate and refine based on real conversations</li>
+                </ol>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

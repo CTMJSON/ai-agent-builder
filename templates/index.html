@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent Builder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Agent Builder</h1>
+            <p class="subtitle">Generate custom AI agent prompts from any website</p>
+        </header>
+
+        <main>
+            <form action="/generate" method="POST" class="url-form">
+                <div class="input-group">
+                    <input 
+                        type="text" 
+                        name="url" 
+                        placeholder="Enter website URL (e.g., example.com)" 
+                        required
+                        class="url-input"
+                    >
+                    <button type="submit" class="submit-btn">Generate Prompt</button>
+                </div>
+                <p class="hint">We'll crawl the homepage and key pages (about, contact, FAQ, etc.)</p>
+            </form>
+
+            <div class="features">
+                <div class="feature">
+                    <h3>Smart Crawling</h3>
+                    <p>Automatically finds and crawls important pages like contact, FAQ, and services</p>
+                </div>
+                <div class="feature">
+                    <h3>AI Extraction</h3>
+                    <p>Uses GPT-4 to extract business info, hours, contact details, and more</p>
+                </div>
+                <div class="feature">
+                    <h3>Ready-to-Use</h3>
+                    <p>Generates a complete system prompt for voice or chat AI agents</p>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
