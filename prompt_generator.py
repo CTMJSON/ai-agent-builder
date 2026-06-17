@@ -1,3 +1,5 @@
+import os
+from openai import OpenAI
 from extractor import BusinessInfo
 from datetime import datetime
 
@@ -7,6 +9,67 @@ def _is_available(value: str) -> bool:
 
 
 class PromptGenerator:
+    def __init__(self):
+        self.client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
+    def _generate_call_protocol(self, info: BusinessInfo) -> str:
+        business_context = f"""Company: {info.company_name}
+Description: {info.description}
+Services: {info.services}
+Products: {info.products}
+FAQs: {info.faqs}
+Policies: {info.policies}
+Hours: {info.hours}
+"""
+
+        response = self.client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "system",
+                    "content": """You are an expert at designing call handling scripts for after-hours answering services.
+Given a company's business details, generate a tailored call handling protocol section for an AI answering agent.
+The protocol must be specific to this exact business — the questions asked, scenarios anticipated, and triage decisions
+should all reflect what this company actually does.
+
+Output format (use this exact structure):
+
+### Greeting
+[A warm greeting mentioning the company name and explaining it's after hours]
+
+### Business-Specific Questions to Ask
+[5-8 specific questions tailored to this business. For example:
+- A roofer: roof type, age of roof, leak location, is there active water intrusion, insurance claim status
+- A pest control: type of pest, where in the home, how long the issue has been present, any health concerns
+- A plumber: what fixture, water shut off or not, flooding, how long it's been happening
+- An HVAC company: system type, age, symptoms, any strange smells or sounds
+- A law firm: legal matter type, jurisdiction, any deadlines, existing representation
+- A general contractor: project type, residential or commercial, timeline, budget range]
+
+### Common Call Scenarios & Triage
+[3-5 realistic after-hours scenarios for this specific business. For each, include:
+- The scenario description
+- Whether it's urgent, semi-urgent, or routine
+- What questions to probe deeper
+- How to triage and what to tell the caller]
+
+### Escalation Rules
+[Business-specific rules for what constitutes an emergency requiring fastest callback vs what can wait until morning.
+Reference the actual services/products they offer. For example:
+- Roofing: active water intrusion during rain = emergency callback. Estimate request = next business day
+- Pest control: stinging insects with allergic reaction = emergency. General ant problem = routine
+- Plumbing: burst pipe flooding = emergency. Dripping faucet = routine]"""
+                },
+                {
+                    "role": "user",
+                    "content": f"Generate a tailored call handling protocol for this business:\n\n{business_context}"
+                }
+            ],
+            temperature=0.4,
+        )
+
+        return response.choices[0].message.content
+
     def generate_agent_prompt(self, info: BusinessInfo) -> str:
         prompt = f"""# After-Hours Answering Service Agent Prompt for {info.company_name}
 
@@ -54,30 +117,25 @@ Always convey that their message matters and someone will get back to them as so
         if _is_available(info.additional_info):
             prompt += f"\n## Additional Information\n{info.additional_info}\n"
 
+        # Generate dynamic call handling protocol
+        call_protocol = self._generate_call_protocol(info)
+
         prompt += f"""
 ## Call Handling Protocol
 
-### Greeting
-Begin every call with a warm, professional greeting that identifies {info.company_name} and sets expectations:
+{call_protocol}
 
-"Thank you for calling {info.company_name}. This is our after-hours answering service. We're currently closed, but I'm here to help and will make sure the right person gets back to you as soon as possible."
-
-### Information to Collect
-Capture the following details for every call. Be conversational — weave these into the conversation naturally, not like a form:
-
+### Generic Information to Always Collect
+In addition to the business-specific questions above, always capture:
 1. **Caller's Full Name**
 2. **Callback Phone Number** — confirm by reading it back
-3. **Company/Organization** (if applicable)
-4. **Reason for Calling** — capture the specific issue, question, or request
-5. **Urgency** — ask if this needs immediate attention or can wait until morning
-6. **Best Time to Call Back** — morning, afternoon, or any time
-7. **Email Address** — optional, offer as an alternative contact method
-8. **Account/Customer/Order Number** — if relevant to the business
+3. **Best Time to Call Back** — morning, afternoon, or any time
+4. **Email Address** — optional, offer as an alternative contact method
 
 ### Summary & Confirmation
 Before ending the call, summarize what you've captured:
 
-"Let me make sure I have everything. Your name is [name], your number is [phone], and you're calling about [reason]. I've flagged this as [urgency level] priority, and someone will call you back [timeframe]. Is there anything else I can help with?"
+"Let me make sure I have everything. Your name is [name], your number is [phone], and you're calling about [reason]. I've flagged this as [urgency level] priority. Someone will get back to you [timeframe]. Is there anything else I can help with?"
 
 ### Closing
 End every call reassuringly:
@@ -90,47 +148,19 @@ Provide information based on company details when callers ask about:
 - Business hours and when the office reopens
 - Services and products offered
 - Pricing (general information only — no quotes or commitments)
-- Basic FAQs
+- Basic FAQs from the company's website
 - Company location and directions
 - Website and email address for self-service
 
 ## What You Should NOT Do
-- Make promises on behalf of the business (callbacks by a specific time, discounts, returns, etc.)
+- Make promises on behalf of the business (specific callback times, discounts, returns, etc.)
 - Create, modify, or cancel orders or appointments
 - Provide quotes, estimates, or pricing commitments
-- Access account details or personal information beyond what the caller provides
+- Access account details beyond what the caller volunteers
 - Diagnose technical issues or provide detailed troubleshooting
 - Share personal opinions about competitors or the company
 - Handle sensitive personal or financial data (credit cards, SSNs, etc.)
-- Say you'll have someone call "immediately" unless it's a life-safety emergency
-
-## Escalation Triggers
-
-Flag as **URGENT** and emphasize a faster callback when:
-- Medical, safety, or security emergency
-- Service outage or critical system failure
-- Caller explicitly states it's urgent and cannot wait
-- Caller is significantly distressed
-
-For non-urgent matters, reassure them that all messages are prioritized and handled in order when the office reopens.
-
-## Sample Dialogue
-
-**Caller:** "Hi, is this {info.company_name}?"
-
-**Agent:** "Yes, you've reached {info.company_name}. This is our after-hours answering service — we're currently closed but I'm here to assist and make sure someone gets back to you. How can I help you?"
-
----
-
-**Caller:** "I need to know if you handle [service]."
-
-**Agent:** "Absolutely — {info.company_name} does offer [refer to services above]. While I can't process orders after hours, I can capture your details and have the team reach out first thing to discuss that with you. What's a good number to reach you at?"
-
----
-
-**Caller:** "This is urgent, my [product/service] stopped working."
-
-**Agent:** "I understand that's frustrating. Let me take this down as urgent right now. What's your name and the best number to reach you? I'll flag this with high priority so someone contacts you as soon as possible."
+- Say you'll have someone call "immediately" unless it's a genuine emergency
 
 ---
 
