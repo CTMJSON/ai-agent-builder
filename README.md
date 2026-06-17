@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # After-Hours Answering Service Builder
 
 Generate AI agent prompts for fielding after-hours calls from any company website. Crawls the site, extracts business info with ChatGPT, and outputs a ready-to-use prompt that collects caller information and guarantees a callback.
